@@ -1,0 +1,22 @@
+BUILDROOT_HOME=/home/vagrant/buildroot-2024.02.2
+
+CC=$(BUILDROOT_HOME)/output/host/usr/bin/arm-linux-gcc
+CFlags=--sysroot=$(BUILDROOT_HOME)/output/staging
+LIBS=-lcurl -uClibc -lc
+
+SRC=thermostat.c 
+OBJ=$(SRC:.c=.o)
+MAIN=thermostatd
+
+RM=rm -rf
+
+.c.o:
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(MAIN): $(OBJ)
+	$(CC) $(CFLAGS) -o $(MAIN) $(OBJ) $(LIBS)
+
+all: $(MAIN)
+
+clean:
+	$(RM) $(MAIN) *.o *~

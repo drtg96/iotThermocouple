@@ -1,0 +1,19 @@
+CC=gcc
+LFLAGS=-L/user/lib/x86_64-linux-gnu
+LIBS=-lcurl -lpthread
+SRC=thermostat.c
+OBJ=$(SRC:.c=.o)
+MAIN=thermostatd
+
+RM=rm -rf
+
+.c.o:
+	$(CC) $(INCLUDES) -c $< -o $@
+
+$(MAIN): $(OBJ)
+	$(CC) $(INCLUDES) -o $(MAIN) $(OBJ) $(LFLAGS) $(LIBS)
+
+all: $(MAIN)
+
+clean:
+	$(RM) $(MAIN) *.o *~
