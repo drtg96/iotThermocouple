@@ -40,29 +40,26 @@ struct Arguments
 };
 
 // argp constant - usage script
-static char usage[] = 
-    "Usage:\
-\n-u/--url\tTakes a properly formated URL followed by a port number\
-\n-o/--post\tPerform an HTTP POST\
-\n-g/--get\tPerform an HTTP GET\
-\n-p/--put\tPerform an HTTP PUT\
-\n-d/--delete\tPerform an HTTP DELETE\
-\n-h/--help\tShow this usage message\
-\nExample:\t./thermosatd --url http://3.132.111.9:8080/status_tbl> -g\n";
+static char example[] = "--url http://3.132.111.9:8080/status_tbl> -g";
 
 // argp constant - documentation
 static char description[] =
-    "Provide a url and perform a GET, POST, DELETE or PUT operation.";
+"Provide a url and perform a GET, POST, DELETE or PUT operation.\
+      __________\
+     | _  ____  """"---,,,______________________\
+     |(_)|37.2|           ____________________|_)\
+DRT  |__________,,,---""";
 
 // argp options
-static struct argp_option opt[] =
+static struct argp_option options[] =
 {
-    {"url",     'u', "String",  NONE, "Required"},
-    {"post",    'o', NONE,      NONE, "Requires verb"},
-    {"get",     'g', NONE,      NONE, "Does not require verb"},
-    {"put",     'p', NONE,      NONE, "Requires verb"},
-    {"delete",  'd', NONE,      NONE, "Requires verb"},
-    {NONE}
+    {"url",     'u',    "String",  NONE,    "Required. Takes a properly formated URL followed by a port number", NONE},
+    {"post",    'o',    NONE,      NONE,    "Requires verb. Perform an HTTP POST.", NONE},
+    {"get",     'g',    NONE,      NONE,    "Does not require verb. Perform an HTTP GET.", NONE},
+    {"put",     'p',    NONE,      NONE,    "Requires verb. Perform an HTTP PUT.", NONE},
+    {"delete",  'd',    NONE,      NONE,    "Requires verb. Perform an HTTP DELETE", NONE},
+    {"help",    'h',    NONE,      NONE,    "Show this usage message.", NONE},
+    {NONE,      NONE,   NONE,      NONE,    NONE,   NONE}
 };
 
 // A holder for curl responses

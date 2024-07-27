@@ -181,7 +181,6 @@ static error_t parser(int key, char *arg, struct argp_state *state)
                 argp_usage(state);
                 return REQ_ERR;
             }
-            break;
         case ARGP_KEY_ARG: // Too many args
             if (state->arg_num >= 1)
             {
@@ -191,7 +190,7 @@ static error_t parser(int key, char *arg, struct argp_state *state)
             }
             arg_struct->arg = arg;
             break;
-        case ARGP_KEY_END: // URL malformed
+        case ARGP_KEY_END: // Reached the last key, check input.
             if (arg_struct->url == NULL)
             {
                 syslog(LOG_INFO, "Invalide URL provided.");
@@ -240,7 +239,7 @@ static error_t parser(int key, char *arg, struct argp_state *state)
  * my original implemention and consequently I do owe a great deal of the success
  * of this project to the internet.
  */
-static struct argp argp = {opt, parser, usage, description};
+static struct argp argp = {options, parser, description, example, 0, 0, 0};
 
 /*
  * Read temperature file and publishes the data
