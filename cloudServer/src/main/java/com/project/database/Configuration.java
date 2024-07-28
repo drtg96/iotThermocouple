@@ -2,7 +2,15 @@ package com.project.database;
 
 /**
  * CREATE DATABASE thermaldb;
- * CREATE TABLE config_tbl (id INT UNSIGNED NOT NULL AUTO_INCREMENT, heatTemp FLOAT(25)  NOT NULL, coolTemp FLOAT(25), desc TINYTEXT(255), primary key(id));
+ * USE thermaldb;
+ * CREATE TABLE config_tbl
+ * (
+ *    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+ *   heatTemp FLOAT(25)  NOT NULL,
+ *    coolTemp FLOAT(25) NOT NULL,
+ *    description VARCHAR(150),
+ *    PRIMARY  KEY (id)
+ * );
  */
 public class Configuration implements Stored
 {
