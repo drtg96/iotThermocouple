@@ -3,6 +3,18 @@ package com.project.database;
 import java.sql.Timestamp;
 import java.time.Instant;
 
+/**
+ * CREATE DATABASE thermaldb;
+ * USE thermaldb;
+ * CREATE TABLE meas_tbl
+ * (
+ *    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+ *    temperature FLOAT(25)  NOT NULL,
+ *    dateTime DATETIME NOT NULL,
+ *    PRIMARY  KEY (id)
+ * );
+ */
+
 public class Measurement implements Stored
 {
     private Long id;
