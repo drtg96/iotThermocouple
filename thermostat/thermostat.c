@@ -239,7 +239,7 @@ static error_t parser(int key, char *arg, struct argp_state *state)
  * my original implemention and consequently I do owe a great deal of the success
  * of this project to the internet.
  */
-static struct argp argp = {options, parser, description, example, 0, 0, 0};
+static struct argp argp = {options, parser, usage_help, description, 0, 0, 0};
 
 /*
  * Read temperature file and publishes the data
@@ -256,6 +256,8 @@ static void publishMeasurement(void)
     buffer = malloc((size + 1) * sizeof(*buffer)); 
     fread(buffer, size, 1, fp);
     buffer[size] = '\0';
+    
+    syslog(LOG_INFO, "Temperature taken successfully.");
     
     doCurlAction(MEAS_TBL_URL, buffer, "POST", true);
 }
@@ -387,7 +389,7 @@ static int execute(void)
     // check operation of "tcsimd"
     if (file_exists(TEMP_PATH) && file_exists(STAT_PATH))
     {
-        syslog(LOG_INFO, "Thermocouple succeeded.");
+        syslog(LOG_INFO, "Thermocouple test passed.");
         while (1)
         {
          // read temp and send post to webserver for thermostat
@@ -398,7 +400,7 @@ static int execute(void)
         }
         return WEIRD_EXIT;
     }
-        syslog(LOG_ERR, "Thermocouple failed.");
+        syslog(LOG_ERR, "Thermocouple test failed.");
         return NO_FILE;
 }
 

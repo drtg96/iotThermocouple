@@ -40,15 +40,11 @@ struct Arguments
 };
 
 // argp constant - usage script
-static char example[] = "--url http://3.132.111.9:8080/status_tbl> -g";
+static char usage_help[] = "--url http://3.132.111.9:8080/status_tbl> -g";
 
 // argp constant - documentation
-static char description[] =
-"Provide a url and perform a GET, POST, DELETE or PUT operation.\
-      __________\
-     | _  ____  """"---,,,______________________\
-     |(_)|37.2|           ____________________|_)\
-DRT  |__________,,,---""";
+static char description[] = "\n\t\t\t>++('> >++('> >++('>\n\
+\nProvide a url and perform a GET, POST, DELETE or PUT operation.";
 
 // argp options
 static struct argp_option options[] =
@@ -58,7 +54,6 @@ static struct argp_option options[] =
     {"get",     'g',    NONE,      NONE,    "Does not require verb. Perform an HTTP GET.", NONE},
     {"put",     'p',    NONE,      NONE,    "Requires verb. Perform an HTTP PUT.", NONE},
     {"delete",  'd',    NONE,      NONE,    "Requires verb. Perform an HTTP DELETE", NONE},
-    {"help",    'h',    NONE,      NONE,    "Show this usage message.", NONE},
     {NONE,      NONE,   NONE,      NONE,    NONE,   NONE}
 };
 

@@ -137,7 +137,10 @@ public final class CurlUtils
     private static Stored parseTableData(String table, String row)
     {
         String[] entries = row.split(",");
-        switch (table)
+	System.out.println("row: " + row);
+	System.out.println("entries: " entries);
+        
+	switch (table)
         {
             case CONFIGURATION_TBL:
                 Long config_id = Long.parseLong(entries[0]);

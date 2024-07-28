@@ -24,7 +24,7 @@ public class SQLDatabaseConnection
         try (Connection connection = makeConnection();
                 Statement statement = connection.createStatement();)
         {
-//            String insert = "INSERT INTO config_tbl (heatTemp, coolTemp, desc) VALUES ('" +  + "')";
+//            String insert = "INSERT INTO config_tbl (heatTemp, coolTemp, description) VALUES ('" +  + "')";
             String insert = "INSERT INTO config_tbl VALUES " + config.toString();
             statement.execute(insert);
         }
@@ -51,7 +51,7 @@ public class SQLDatabaseConnection
                 config = new Configuration(resultSet.getLong("id"),
                         resultSet.getDouble("heatTemp"),
                         resultSet.getDouble("coolTemp"),
-                        resultSet.getString("desc"));
+                        resultSet.getString("description"));
             }
             return config;
         }
@@ -79,7 +79,7 @@ public class SQLDatabaseConnection
                 config = new Configuration(resultSet.getLong("id"),
                         resultSet.getDouble("heatTemp"),
                         resultSet.getDouble("coolTemp"),
-                        resultSet.getString("desc"));
+                        resultSet.getString("description"));
                 configs.add(config);
             }
             return configs;
@@ -93,12 +93,12 @@ public class SQLDatabaseConnection
 
     // thermaldb::config_tbl
     // READ (GET / QUERY)
-    public static final Configuration getConfiguration(String desc)
+    public static final Configuration getConfiguration(String description)
     {
         try (Connection connection = makeConnection();
                 Statement statement = connection.createStatement();)
         {
-            String query = "SELECT * FROM config_tbl where desc = '" + desc + "'";     
+            String query = "SELECT * FROM config_tbl where description = '" + description + "'";     
             ResultSet resultSet = statement.executeQuery(query);
             Configuration config = null;                    
             while (resultSet.next())                 
@@ -106,7 +106,7 @@ public class SQLDatabaseConnection
                 config = new Configuration(resultSet.getLong("id"),
                         resultSet.getDouble("heatTemp"),
                         resultSet.getDouble("coolTemp"),
-                        resultSet.getString("desc"));
+                        resultSet.getString("description"));
             }
             return config;
         } 
@@ -127,7 +127,7 @@ public class SQLDatabaseConnection
             String update = "UPDATE config_tbl SET "
                 + " heatTemp = " + config.getHeatTemperature()
                 + ", coolTemp = " + config.getCoolTemperature()
-                + ", desc = " + config.getDescription()
+                + ", description = " + config.getDescription()
                 + " WHERE id = " + config.getID();
             statement.execute(update);
         } 
