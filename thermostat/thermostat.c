@@ -393,7 +393,7 @@ static void _signal_handler(const int signal)
             _exit_process(RECV_SIGTERM);
             break;
         default:
-            _exit_process(WEIRD_EXIT);
+            syslog(LOG_INFO, "received unhandled signal");
     }
 }
 
@@ -415,7 +415,7 @@ static void _handle_fork(const pid_t pid)
 /*
  * Handler for handfree version on this program
  */
-static int runAsDaemon(void)
+static void runAsDaemon(void)
 {
     pid_t pid = fork();
 
@@ -425,7 +425,18 @@ static int runAsDaemon(void)
 
     if (setsid() < -1)
     {
-        return NO_SETSID;
+        _exit_process(NO_SETSID);
+    }
+
+    signal(SIGTERM, _signal_handler);
+    signal(SIGHUP, _signal_handler);
+   
+
+    //umask(S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+
+    if (chdir("/") < 0)
+    {
+      _exit_process(ERR_CHDIR);
     }
 
     // Closing file descriptors (STDIN, STDOUT, etc.).
@@ -433,18 +444,6 @@ static int runAsDaemon(void)
     {
         close(x);
     }
-
-    umask(S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-
-    if (chdir("/") < 0)
-    {
-       return ERR_CHDIR;
-    }
-
-    signal(SIGTERM, _signal_handler);
-    signal(SIGHUP, _signal_handler);
-
-    return OK;
 }
 
 /*
@@ -519,6 +518,6 @@ int main(int argc, char **argv)
         _exit_process(code);
     }
 
-    return WEIRD_EXIT;
+    return OK;
 }
 
