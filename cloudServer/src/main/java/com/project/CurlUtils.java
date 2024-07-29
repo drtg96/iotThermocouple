@@ -92,7 +92,7 @@ public final class CurlUtils
 
             if (stored instanceof Configuration)
             {
-                response = SQLDatabaseConnection.updateConfiguration((Configuration) stored);
+                response = SQLDatabaseConnection.insertConfiguration((Configuration) stored);
             }
             else if (stored instanceof Status)
             {
@@ -103,6 +103,8 @@ public final class CurlUtils
                 response = handleTemperatureChange((Measurement) stored) + "/n";
                 response += SQLDatabaseConnection.insertMeasurement((Measurement) stored);
             }
+
+            System.out.println("Response: " + response);
 
             return newFixedLengthResponse(response);
         }
@@ -134,25 +136,24 @@ public final class CurlUtils
         return newFixedLengthResponse(NanoHTTPD.Response.Status.NOT_FOUND, MIME_PLAINTEXT, msg);
     }
 
-    private static Stored parseTableData(String table, String row)
+    private static Stored parseTableData(String table, String data)
     {
-        String[] entries = row.split(",");
-	System.out.println("row: " + row);
-	System.out.println("entries: " entries);
+        System.out.println("table: " + table);
+	    System.out.println("data: " + data);
         
 	switch (table)
         {
             case CONFIGURATION_TBL:
-                Long config_id = Long.parseLong(entries[0]);
-                Double heatTemp = Double.parseDouble(entries[1]);
-                Double coolTemp = Double.parseDouble(entries[2]);
-                String desc = entries[3];
-                return new Configuration(config_id, heatTemp, coolTemp, desc);
+                data = data.replace("(", "").replace("'", "").replace(")", "");
+                String[] entries = data.split(",");
+                double heatTemp = Double.parseDouble(entries[0]);
+                double coolTemp = Double.parseDouble(entries[1]);
+                String desc = entries[2];
+                return new Configuration(0L, heatTemp, coolTemp, desc);
 
             case MEASUREMENT_TBL:
-                Long meas_id = Long.parseLong(entries[0]);
-                Double temp = Double.parseDouble(entries[1]);
-                return new Measurement(meas_id, temp);
+                double temp = Double.parseDouble(data);
+                return new Measurement(0L, temp);
             default:
                 return null;
         }        
@@ -180,20 +181,24 @@ public final class CurlUtils
     private static String handleTemperatureChange(Measurement measurement)
     {
         Configuration config = getConfigurationFromDescription();
+        System.out.println("config from desc: " + config.toString());
         double temp = measurement.getTemperature();
         Timestamp ts = new Timestamp(System.currentTimeMillis());
         
         if (temp > config.getCoolTemperature())
         {
             // Turn heater off
+            System.out.println("Turning heater off.");
             return SQLDatabaseConnection.updateStatus(new Status(false, ts));
         }
         else if (temp < config.getHeatTemperature())
         {
             //turn heater on
+            System.out.println("Turning heater on.");
             return SQLDatabaseConnection.updateStatus(new Status(true, ts));
         }
 
+        System.out.println("No change");
         // no change
         return null;
     }

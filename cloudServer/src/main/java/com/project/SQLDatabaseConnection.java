@@ -24,13 +24,14 @@ public class SQLDatabaseConnection
         try (Connection connection = makeConnection();
                 Statement statement = connection.createStatement();)
         {
-//            String insert = "INSERT INTO config_tbl (heatTemp, coolTemp, description) VALUES ('" +  + "')";
-            String insert = "INSERT INTO config_tbl VALUES " + config.toString();
+            String insert = "INSERT INTO config_tbl (heatTemp, coolTemp, description) VALUES "
+                + config.toString();
+            System.out.println("insert CONFIG: " + config.toString());
             statement.execute(insert);
         }
         catch (SQLException e)
         {
-            System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());                                                                                                                
+            System.err.format("SQL State: %s\n%s\n", e.getSQLState(), e.getMessage());                                                                                                                
             return "Insert failed\n";
         }           
         return "Insert succeeded\n";
@@ -57,7 +58,7 @@ public class SQLDatabaseConnection
         }
         catch (SQLException e)
         {
-            System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
+            System.err.format("SQL State: %s\n%s\n", e.getSQLState(), e.getMessage());
         }
         return null;
     }
@@ -86,7 +87,7 @@ public class SQLDatabaseConnection
         }
         catch (SQLException e)
         {
-            System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
+            System.err.format("SQL State: %s\n%s\n", e.getSQLState(), e.getMessage());
         }
         return null;
     }
@@ -112,7 +113,7 @@ public class SQLDatabaseConnection
         } 
         catch (SQLException e)
         {
-            System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
+            System.err.format("SQL State: %s\n%s\n", e.getSQLState(), e.getMessage());
         }
         return null;
     }
@@ -133,7 +134,7 @@ public class SQLDatabaseConnection
         } 
         catch (SQLException e)
         {
-            System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
+            System.err.format("SQL State: %s\n%s\n", e.getSQLState(), e.getMessage());
             return "Update config_tbl failed\n";
         }
         return "Update config_tbl succeeded\n";
@@ -151,7 +152,7 @@ public class SQLDatabaseConnection
         }
         catch (SQLException e)
         {
-            System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
+            System.err.format("SQL State: %s\n%s\n", e.getSQLState(), e.getMessage());
             return "Delete failed\n";
         }
         return "Delete succeeded\n";
@@ -164,12 +165,13 @@ public class SQLDatabaseConnection
         try (Connection connection = makeConnection();
                 Statement statement = connection.createStatement();)
         {
-            String insert = "INSERT INTO status_tbl VALUES " + status.toString();
+            String insert = "INSERT INTO status_tbl (state, dateTime) VALUES " + status.toString();
+            System.out.println("insert STATUS: " + insert);
             statement.execute(insert);
         }
         catch (SQLException e)
         {
-            System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
+            System.err.format("SQL State: %s\n%s\n", e.getSQLState(), e.getMessage());
             return "Insert status_tbl failed\n";
         }
         return "Insert status_tbl succeeded\n";
@@ -187,13 +189,14 @@ public class SQLDatabaseConnection
             Status status = null;
             while (resultSet.next())
             {
-                status = new Status(resultSet.getBoolean("state"), resultSet.getTimestamp("date"));
+                status = new Status(resultSet.getBoolean("state"),
+                        resultSet.getTimestamp("dateTime"));
             }
             return status;
         } 
         catch (SQLException e)
         {
-            System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
+            System.err.format("SQL State: %s\n%s\n", e.getSQLState(), e.getMessage());
         }
         return null;
     }
@@ -206,13 +209,14 @@ public class SQLDatabaseConnection
                 Statement statement = connection.createStatement();)
         {
             String update = "UPDATE status_tbl SET "
-               + " state = " + status.getState()
-               + ", date = " + status.getDateTime();
+               + "state = " + status.getState()
+               + ", dateTime = '" + status.getDateTime() + "';";
+            System.out.println("Update status: " + update);
             statement.execute(update);
         }        
         catch (SQLException e)
         {
-            System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
+            System.err.format("SQL State: %s\n%s\n", e.getSQLState(), e.getMessage());
             return "Update status_tbl failed\n";
         }
         return "Update status_tbl succeeded\n";
@@ -225,12 +229,13 @@ public class SQLDatabaseConnection
         try (Connection connection = makeConnection();
                 Statement statement = connection.createStatement();)
         {
-            String insert = "INSERT INTO meas_tbl VALUES " + measurement.toString();
+            String insert = "INSERT INTO meas_tbl (temperature, dateTime) VALUES " + measurement.toString();
+            System.out.println("insert MEAS: " + insert);
             statement.execute(insert);
         }
         catch (SQLException e)
         {
-            System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
+            System.err.format("SQL State: %s\n%\n", e.getSQLState(), e.getMessage());
             return "Insert meas_tbl failed\n";
         }
         return "Insert meas_tbl succeeded\n";
@@ -250,14 +255,14 @@ public class SQLDatabaseConnection
             {
                 Measurement measurement = new Measurement(
                         resultSet.getLong("id"),
-                        resultSet.getDouble("temp"));
+                        resultSet.getDouble("temperature"));
                 measurements.add(measurement);
             }
             return measurements;
         }
         catch (SQLException e)
         {
-            System.err.format("SQL State: %s\n%s", e.getSQLState(), e.getMessage());
+            System.err.format("SQL State: %s\n%s\n", e.getSQLState(), e.getMessage());
         }
         return null;
     }
