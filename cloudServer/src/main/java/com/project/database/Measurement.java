@@ -7,45 +7,29 @@ import java.time.Instant;
  * CREATE DATABASE thermaldb;
  * USE thermaldb;
  * CREATE TABLE meas_tbl
- * (
- *    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
- *    temperature FLOAT(25)  NOT NULL,
- *    dateTime DATETIME NOT NULL,
- *    PRIMARY  KEY (id)
- * );
+ *    (temp FLOAT(25) NOT NULL,
+ *    dateTime DATETIME NOT NULL);
  */
 
 public class Measurement implements Stored
 {
-    private Long id;
-    private Double temperature;
+    private Double temp;
     private Timestamp dateTime;
 
-    public Measurement(Long id, Double temperature)
+    public Measurement(Double temp)
     {
-        this.id = id;
-        this.temperature = temperature;
+        this.temp = temp;
         this.dateTime = Timestamp.from(Instant.now());
-    }
-
-    public Long getID()
-    {
-        return id;
-    }
-
-    public void setID(Long id)
-    {
-        this.id = id;
     }
 
     public Double getTemperature()
     {
-        return temperature;
+        return temp;
     }
 
-    public void setTemperature(Double temperature)
+    public void setTemperature(Double temp)
     {
-        this.temperature = temperature;
+        this.temp = temp;
     }
 
     public Timestamp getDateTime()
@@ -60,7 +44,6 @@ public class Measurement implements Stored
 
     public String toString()
     {
-        return "('" + temperature.toString() + "', '" + dateTime.toString() + "')";
+        return "('" + temp.toString() + "', '" + dateTime.toString() + "')";
     }
 }
-
