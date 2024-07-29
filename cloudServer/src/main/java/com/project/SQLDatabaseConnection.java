@@ -24,7 +24,7 @@ public class SQLDatabaseConnection
         try (Connection connection = makeConnection();
                 Statement statement = connection.createStatement();)
         {
-            String insert = "INSERT INTO config_tbl (heatTemp, coolTemp, description) VALUES "
+            String insert = "INSERT INTO config_tbl (id, heatTemp, coolTemp, description) VALUES "
                 + config.toString();
             System.out.println("insert CONFIG: " + config.toString());
             statement.execute(insert);
@@ -126,10 +126,11 @@ public class SQLDatabaseConnection
                 Statement statement = connection.createStatement();)
         {
             String update = "UPDATE config_tbl SET "
-                + " heatTemp = " + config.getHeatTemperature()
-                + ", coolTemp = " + config.getCoolTemperature()
-                + ", description = " + config.getDescription()
-                + " WHERE id = " + config.getID();
+                + " heatTemp = '" + config.getHeatTemperature()
+                + "', coolTemp = '" + config.getCoolTemperature()
+                + "', description = '" + config.getDescription()
+                + "' WHERE id = '" + config.getID() + "'";
+            System.out.println("Update config: " + update);
             statement.execute(update);
         } 
         catch (SQLException e)

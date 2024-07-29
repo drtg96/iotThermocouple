@@ -67,7 +67,10 @@ public class Configuration implements Stored
 
     public String toString()
     {
-        return "('" + heatTemp.toString() + "', '" + coolTemp.toString() + "', '" + desc + "')";
+        return "('" + id.toString()
+            + "', '" + heatTemp.toString()
+            + "', '" + coolTemp.toString()
+            + "', '" + desc + "')";
     }
 }
 

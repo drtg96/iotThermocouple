@@ -37,7 +37,7 @@ public final class CurlUtils
                         Configuration config = SQLDatabaseConnection.getConfiguration(id);
                         if (config == null)
                         {
-                            return failedAttempt("Config value was null!");
+                            return failedAttempt("Entry in Configuration Table is missing!");
                         }
                         jsonResponse = gson.toJson(config);
                     }
@@ -46,7 +46,7 @@ public final class CurlUtils
                         List<Configuration> configs = SQLDatabaseConnection.getAllConfigurations();
                         if (configs.isEmpty())
                         {
-                            return failedAttempt("Get query returned empty!");
+                            return failedAttempt("Configuration Table is empty!");
                         }
                         jsonResponse = gson.toJson(configs);
                     }
@@ -56,18 +56,18 @@ public final class CurlUtils
                     Status status = SQLDatabaseConnection.getStatus();
                     if (status == null) 
                     {
-                        return failedAttempt("Status value was null!");
+                        return failedAttempt("Status Table is empty.");
                     }
                     jsonResponse = gson.toJson(status);
                     break;
                
                 case MEASUREMENT_TBL:
-                    List<Measurement> measurements = SQLDatabaseConnection.getAllMeasurements();
-                    if (measurements.isEmpty())
+                    Measurement measurement = SQLDatabaseConnection.getMeasurement();
+                    if (measurement == null)
                     {
-                        return failedAttempt("Get query returned empty!");
+                        return failedAttempt("Measurement Table is empty.");
                     }
-                    jsonResponse = gson.toJson(measurements);
+                    jsonResponse = gson.toJson(measurement);
                     break;
                
                 default:
@@ -94,7 +94,7 @@ public final class CurlUtils
 
             if (stored instanceof Configuration)
             {
-                response = SQLDatabaseConnection.insertConfiguration((Configuration) stored);
+                response = SQLDatabaseConnection.updateConfiguration((Configuration) stored);
             }
             else if (stored instanceof Status)
             {
@@ -102,8 +102,8 @@ public final class CurlUtils
             }
             else if (stored instanceof Measurement) 
             {
-                response = handleTemperatureChange((Measurement) stored) + ";";
-                response += SQLDatabaseConnection.insertMeasurement((Measurement) stored);
+                handleTemperatureChange((Measurement) stored);
+                response = SQLDatabaseConnection.insertMeasurement((Measurement) stored);
             }
 
             System.out.println("Response: " + response);
@@ -147,10 +147,11 @@ public final class CurlUtils
             case CONFIGURATION_TBL:
                 data = data.replace("(", "").replace("'", "").replace(")", "");
                 String[] entries = data.split(",");
-                double heatTemp = Double.parseDouble(entries[0]);
-                double coolTemp = Double.parseDouble(entries[1]);
-                String desc = entries[2];
-                return new Configuration(0L, heatTemp, coolTemp, desc);
+                long id = Long.parseLong(entries[0]);
+                double heatTemp = Double.parseDouble(entries[1]);
+                double coolTemp = Double.parseDouble(entries[2]);
+                String desc = entries[3];
+                return new Configuration(id, heatTemp, coolTemp, desc);
 
             case MEASUREMENT_TBL:
                 return new Measurement(Double.parseDouble(data));
@@ -178,7 +179,7 @@ public final class CurlUtils
         return SQLDatabaseConnection.getConfiguration(parseDescription());
     }
 
-    private static String handleTemperatureChange(Measurement measurement)
+    private static void handleTemperatureChange(Measurement measurement)
     {
         Configuration config = getConfigurationFromDescription();
         System.out.println("config from desc: " + config.toString());
@@ -189,18 +190,18 @@ public final class CurlUtils
         {
             // Turn heater off
             System.out.println("Turning heater off.");
-            return SQLDatabaseConnection.insertStatus(new Status(false, ts));
+            SQLDatabaseConnection.insertStatus(new Status(false, ts));
+            return;
         }
         else if (temp < config.getHeatTemperature())
         {
             //turn heater on
             System.out.println("Turning heater on.");
-            return SQLDatabaseConnection.insertStatus(new Status(true, ts));
+            SQLDatabaseConnection.insertStatus(new Status(true, ts));
+            return;
         }
 
         System.out.println("No change");
-        // no change
-        return null;
     }
 
     private static String cleanValue(String input)
