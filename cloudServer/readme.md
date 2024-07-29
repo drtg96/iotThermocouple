@@ -19,6 +19,9 @@ Table 1: Configuration [(PK) ID, coolTemp, heatTemo, description]
 Table 2: Status [state, dateTime]
 Table 3: Measurement [temp, dateTime]
 
+![image](https://github.com/user-attachments/assets/a14c871b-ce7e-4bd5-8461-a3987c830a0a)
+
+
 ## AWS EC2
 http://3.132.111.9:8080/
 
