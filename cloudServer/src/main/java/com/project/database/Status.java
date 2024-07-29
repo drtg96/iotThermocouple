@@ -6,10 +6,8 @@ import java.sql.Timestamp;
  * CREATE DATABASE thermaldb;
  * USE thermaldb;
  * CREATE TABLE status_tbl
- * (
- *    state BOOLEAN NOT NULL,
- *    dateTime DATETIME NOT NULL,
- * );
+ *    (state BOOLEAN NOT NULL,
+ *    dateTime DATETIME NOT NULL);
  */
 
 public class Status implements Stored
