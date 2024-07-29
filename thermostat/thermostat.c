@@ -160,6 +160,8 @@ static error_t parser(int key, char *arg, struct argp_state *state)
         case 'u':
             arg_struct->url = arg;
             break;
+	case 'c':
+	    arg_struct->configDir = arg;
         case 'o':
             arg_struct->post = true;
             break;
@@ -181,15 +183,17 @@ static error_t parser(int key, char *arg, struct argp_state *state)
                 argp_usage(state);
                 return REQ_ERR;
             }
-        case ARGP_KEY_ARG: // Too many args
+        case ARGP_KEY_ARG:
             if (state->arg_num >= 1)
             {
                 syslog(LOG_INFO, "Too many arguments, use quotes around your extra argument.");
                 argp_usage(state);
                 return REQ_ERR;
             }
-            arg_struct->arg = arg;
-            break;
+
+            arg_struct->msg = arg;
+            
+	    break;
         case ARGP_KEY_END: // Reached the last key, check input.
             if (arg_struct->url == NULL)
             {
@@ -206,6 +210,10 @@ static error_t parser(int key, char *arg, struct argp_state *state)
                 argp_usage(state);
                 return REQ_ERR;
             }
+	    else if (arg_struct->configDir == NULL)
+	    {
+	       syslog(LOG_INFO, "No config directory provided using default directory.");
+	    }
             break;
         case ARGP_KEY_SUCCESS: // perform request
             if (arg_struct->get) 
@@ -215,17 +223,17 @@ static error_t parser(int key, char *arg, struct argp_state *state)
             }
             else if (arg_struct->post)
             {
-                 doCurlAction(arg_struct->url, arg_struct->arg, "POST", true);
+                 doCurlAction(arg_struct->url, arg_struct->msg, "POST", true);
                  break;
             }
             else if (arg_struct->put)
             {
-                doCurlAction(arg_struct->url, arg_struct->arg, "PUT", true);
+                doCurlAction(arg_struct->url, arg_struct->msg, "PUT", true);
                 break;
             }
             else if (arg_struct->delete)
             {
-                doCurlAction(arg_struct->url, arg_struct->arg, "DELETE", true);
+                doCurlAction(arg_struct->url, arg_struct->msg, "DELETE", true);
                 break;
             }
         default:
@@ -313,6 +321,64 @@ static bool file_exists(const char* fname)
     return (stat(fname, &buffer) == 0) ? true : false;
 }
 
+/*
+ * Publish the configuration file
+ */
+static void publishConfiguration(const char* config)
+{
+    char *buffer = NULL;
+    size_t size = 0;
+
+    FILE *fp = fopen(config, "r");
+    fseek(fp, 0, SEEK_END);
+    size = ftell(fp);
+    rewind(fp);
+    buffer = malloc((size + 1) * sizeof(*buffer)); 
+    fread(buffer, size, 1, fp);
+    buffer[size] = '\0';
+    
+    syslog(LOG_INFO, "Config parsed successfully.");
+    
+    doCurlAction(CONFIG_TBL_URL, buffer, "POST", true);
+}
+
+/*
+ * String combiner
+ */
+char* combine(const char* str1, const char* str2)
+{
+    char* result = malloc(strlen(str1) + strlen(str2) + 1); // +1 for the null-terminator
+    strcpy(result, str1);
+    strcat(result, str2);
+    return result;
+}
+
+/*
+ * Publish the configuration file
+ */
+static void setConfiguration(const char* configDir)
+{
+    char* cFile1 = combine(configDir, WKDAY_MOR_CONF);
+    if (file_exists(cFile1))
+    {
+       publishConfiguration(cFile1);
+    }
+    free(cFile1);
+
+    char* cFile2 = combine(configDir, WKDAY_MID_CONF);
+    if (file_exists(cFile2))
+    {
+        publishConfiguration(cFile2);
+    }
+    free(cFile2);
+
+    char* cFile3 = combine(configDir, WKDAY_NIG_CONF);
+    if (file_exists(cFile3))
+    {
+        publishConfiguration(cFile3);
+    }
+    free(cFile3);
+}
 
 /*
  * Code taken from example in slides with some small modifications
@@ -390,6 +456,9 @@ static int execute(void)
     if (file_exists(TEMP_PATH) && file_exists(STAT_PATH))
     {
         syslog(LOG_INFO, "Thermocouple test passed.");
+
+	// 
+
         while (1)
         {
          // read temp and send post to webserver for thermostat
@@ -416,26 +485,34 @@ int main(int argc, char **argv)
    
         // initialize arguments
         struct Arguments arg_struct;
-        arg_struct.url = NULL;
-        arg_struct.arg = NULL;
-        arg_struct.post = false;
-        arg_struct.get = false;
-        arg_struct.put = false;
-        arg_struct.delete = false;
-
+        arg_struct.configDir	= NULL;
+        arg_struct.url 		= NULL;
+	arg_struct.msg 		= NULL;
+        arg_struct.post 	= false;
+        arg_struct.get 		= false;
+        arg_struct.put 		= false;
+        arg_struct.delete 	= false;
+	
         // parse arguments
         argp_parse(&argp, argc, argv, 0, 0, &arg_struct);
+
+	// set configuration based on input parameter
+	setConfiguration(arg_struct.configDir);
     }
     else
     {
         syslog(LOG_INFO, "-Using daemon-");
-        code = runAsDaemon();
+
+        // use the config files found in the home directory
+        setConfiguration(DFT_CONF_DIR);
+	
+	code = runAsDaemon();
         if (code != OK)
         {
             _exit_process(code);
         }
     }
-   
+            
     code = execute();
     if (execute() != OK)
     {

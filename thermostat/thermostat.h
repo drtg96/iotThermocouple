@@ -27,12 +27,17 @@ static const char* STATUS_TBL_URL   = "http://3.132.111.9:8080/status_tbl";
 static const char* MEAS_TBL_URL     = "http://3.132.111.9:8080/meas_tbl";
 static const char* TEMP_PATH        = "/tmp/temp";
 static const char* STAT_PATH        = "/tmp/status";
+static const char* DFT_CONF_DIR     = "/thermostat/";
+static const char* WKDAY_MOR_CONF   = "weekdayMorningConfig.txt";
+static const char* WKDAY_MID_CONF   = "weekdayMiddayConfig.txt";
+static const char* WKDAY_NIG_CONF   = "weekdayNightConfig.txt";
 
 // Arguments for serving CLI
 struct Arguments
 {
-    char *arg;
+    char *configDir;
     char *url;
+    char *msg;
     bool post;
     bool get;
     bool put;
@@ -40,7 +45,7 @@ struct Arguments
 };
 
 // argp constant - usage script
-static char usage_help[] = "--url http://3.132.111.9:8080/status_tbl> -g";
+static char usage_help[] = "-c /directory/ --url http://3.132.111.9:8080/status_tbl> -g";
 
 // argp constant - documentation
 static char description[] = "\n\t\t\t>++('> >++('> >++('>\n\
@@ -53,7 +58,8 @@ static struct argp_option options[] =
     {"post",    'o',    NONE,      NONE,    "Requires verb. Perform an HTTP POST.", NONE},
     {"get",     'g',    NONE,      NONE,    "Does not require verb. Perform an HTTP GET.", NONE},
     {"put",     'p',    NONE,      NONE,    "Requires verb. Perform an HTTP PUT.", NONE},
-    {"delete",  'd',    NONE,      NONE,    "Requires verb. Perform an HTTP DELETE", NONE},
+    {"delete",  'd',    NONE,      NONE,    "Requires verb. Perform an HTTP DELETE", NONE},    
+    {"config",  'c',    "String",  NONE,    "Not required. Directory where config files are stored", NONE},
     {NONE,      NONE,   NONE,      NONE,    NONE,   NONE}
 };
 
