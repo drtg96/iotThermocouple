@@ -10,13 +10,14 @@ See pom file for more
 
 ## BUILD and RUN
 `mvn compile`
+
 `mvn exec:java -Dexec.mainClass="com.project.Server"`.  
 
 ## Database
 DB identifier: thermodb
-Table 1: Configuration [(PK) ID, coolTemp, heatTemo, desc]
+Table 1: Configuration [(PK) ID, coolTemp, heatTemo, description]
 Table 2: Status [state, dateTime]
-Table 3: Measurement [(PK) ID, temp, dateTime]
+Table 3: Measurement [temp, dateTime]
 
 ## AWS EC2
 http://3.132.111.9:8080/
