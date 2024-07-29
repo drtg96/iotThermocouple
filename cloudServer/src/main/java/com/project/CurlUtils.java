@@ -13,12 +13,11 @@ import java.util.Calendar;
 import static fi.iki.elonen.NanoHTTPD.MIME_PLAINTEXT;
 import static fi.iki.elonen.NanoHTTPD.newFixedLengthResponse;
 
-import static com.project.SQLDatabaseConnection.insertMeasurement;
-import static com.project.SQLDatabaseConnection.insertStatus;
-import static com.project.SQLDatabaseConnection.updateConfiguration;
-
 public final class CurlUtils
 {
+    /*
+     * Perform the HTTP Get action
+     */
     public static NanoHTTPD.Response performGet(NanoHTTPD.IHTTPSession session) 
     {
         String jsonResponse = null;
@@ -78,6 +77,9 @@ public final class CurlUtils
         return failedAttempt("No table!");
     }
 
+    /*
+     * Perform the HTTP POST action
+     */
     public static NanoHTTPD.Response performPost(NanoHTTPD.IHTTPSession session)
     {
         try
@@ -116,27 +118,35 @@ public final class CurlUtils
         }
     }
 
+    /*
+     * Perform the HTTP DELETE action
+     */
     public static NanoHTTPD.Response performDelete(NanoHTTPD.IHTTPSession session) 
     {
         String response = null;
         String table = session.getUri().replace("/", "");
-        String index = cleanValue(session.getUri());
+        long id = Long.parseLong(cleanValue(session.getUri()));
         switch (table)
         {
             case CONFIGURATION_TBL:
-               response = SQLDatabaseConnection.deleteConfiguration(index);
+               response = SQLDatabaseConnection.deleteConfiguration(id);
                return newFixedLengthResponse(response); 
             default:
                return failedAttempt("Delete unsuccessful");
         }
     }
 
-    // Helper functions
+    /**************************************************************************
+     * Utility functions
+     **************************************************************************/
     public static NanoHTTPD.Response failedAttempt(String msg)
     {
         return newFixedLengthResponse(NanoHTTPD.Response.Status.NOT_FOUND, MIME_PLAINTEXT, msg);
     }
 
+    /*
+     * Break down the packet from the thermostat and rebuild it into data objects
+     */
     private static Stored parseTableData(String table, String data)
     {
         System.out.println("table: " + table);
@@ -160,7 +170,10 @@ public final class CurlUtils
         }        
     }
 
-    private static String parseDescription()
+    /*
+     * Equate the wall clock to the programming
+     */
+    private static String getProgramFormat()
     {
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
         if (hour >= 19)
@@ -174,28 +187,34 @@ public final class CurlUtils
         return "MORNING";
     }
 
+    /*
+     * Ensure that we use the correct program configuration to heater logic
+     */
     private static Configuration getConfigurationFromDescription()
     {
-        return SQLDatabaseConnection.getConfiguration(parseDescription());
+        return SQLDatabaseConnection.getConfiguration(getProgramFormat());
     }
 
+
+    /*
+     * Takes care of heater logic so that we can set the state on the 
+     * thermostat
+     */
     private static void handleTemperatureChange(Measurement measurement)
     {
         Configuration config = getConfigurationFromDescription();
-        System.out.println("config from desc: " + config.toString());
+        System.out.println("Current program setting: " + config.toString());
         double temp = measurement.getTemperature();
         Timestamp ts = new Timestamp(System.currentTimeMillis());
         
         if (temp > config.getCoolTemperature())
         {
-            // Turn heater off
             System.out.println("Turning heater off.");
             SQLDatabaseConnection.insertStatus(new Status(false, ts));
             return;
         }
         else if (temp < config.getHeatTemperature())
         {
-            //turn heater on
             System.out.println("Turning heater on.");
             SQLDatabaseConnection.insertStatus(new Status(true, ts));
             return;
@@ -203,12 +222,18 @@ public final class CurlUtils
 
         System.out.println("No change");
     }
-
+   
+    /*
+     * Helpful string formatting 
+     */
     private static String cleanValue(String input)
     {
         return input.replaceAll("[^0-9]", "");
     }
 
+    /*
+     * Converting from URLs to database tables
+     */
     private static String getRoute(String input)
     {
         if (input.contains(MEASUREMENT_TBL))
@@ -227,8 +252,8 @@ public final class CurlUtils
     }
 
     // Class Constants
-    private static final String STATUS_TBL = "status_tbl";
-    private static final String CONFIGURATION_TBL = "config_tbl";
-    private static final String MEASUREMENT_TBL = "meas_tbl";
+    private static final String STATUS_TBL          = "status_tbl";
+    private static final String CONFIGURATION_TBL   = "config_tbl";
+    private static final String MEASUREMENT_TBL     = "meas_tbl";
 }
 

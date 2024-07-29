@@ -143,12 +143,13 @@ public class SQLDatabaseConnection
 
     // thermaldb::config_tbl
     // DELETE (REMOVE/DELETE)
-    public static final String deleteConfiguration(String id)
+    public static final String deleteConfiguration(Long id)
     {
         try (Connection connection = makeConnection();
                 Statement statement = connection.createStatement();)
         {
-            String delete = "DELETE FROM config_tbl WHERE id=" + id;
+            String delete = "DELETE FROM config_tbl WHERE id='" + id.toString() + "';";
+            System.out.println("Delete: " + delete);
             statement.execute(delete);
         }
         catch (SQLException e)
