@@ -1,2 +1,7 @@
-# iot Thermostat
-UNM ECE 531 Final project
+## IoT smart Thermostat
+University of New Mexico -- ECE 531 -- Final project
+Daniel Thomson
+
+           ____.-"":":":":":":":":":":":":":":":":":":":":":":":":":"-.
+          (___:===='==='==='==='==='==='==='=A '   '   '   '   '   '   )
+          jgs `'-._92____94____96____8__|_100____2_____4_____6_____8.-`
