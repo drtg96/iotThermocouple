@@ -165,8 +165,9 @@ public class SQLDatabaseConnection
         try (Connection connection = makeConnection();
                 Statement statement = connection.createStatement();)
         {
-            String insert = "INSERT INTO status_tbl (state, dateTime) VALUES " + status.toString();
-            System.out.println("insert STATUS: " + insert);
+            String insert = "INSERT INTO status_tbl (state, dateTime) VALUES "
+                + status.toString();
+            System.out.println("Insert STATUS: " + insert);
             statement.execute(insert);
         }
         catch (SQLException e)
@@ -201,27 +202,6 @@ public class SQLDatabaseConnection
         return null;
     }
 
-    // thermaldb::status_tbl
-    // UPDATE (EDIT)
-    public static final String updateStatus(Status status)
-    {
-        try (Connection connection = makeConnection();
-                Statement statement = connection.createStatement();)
-        {
-            String update = "UPDATE status_tbl SET "
-               + "state = " + status.getState()
-               + ", dateTime = '" + status.getDateTime() + "';";
-            System.out.println("Update status: " + update);
-            statement.execute(update);
-        }        
-        catch (SQLException e)
-        {
-            System.err.format("SQL State: %s\n%s\n", e.getSQLState(), e.getMessage());
-            return "Update status_tbl failed\n";
-        }
-        return "Update status_tbl succeeded\n";
-    }
-   
     // thermaldb::meas_tbl
     // CREATE (ADD/INSERT)
     public static final String insertMeasurement(Measurement measurement)
@@ -229,8 +209,9 @@ public class SQLDatabaseConnection
         try (Connection connection = makeConnection();
                 Statement statement = connection.createStatement();)
         {
-            String insert = "INSERT INTO meas_tbl (temperature, dateTime) VALUES " + measurement.toString();
-            System.out.println("insert MEAS: " + insert);
+            String insert = "INSERT INTO meas_tbl (temp, dateTime) VALUES " 
+                + measurement.toString();
+            System.out.println("Insert MEAS: " + insert);
             statement.execute(insert);
         }
         catch (SQLException e)
@@ -243,22 +224,19 @@ public class SQLDatabaseConnection
 
     // thermaldb::meas_tbl
     // READ (GET/QUERY)
-    public static final List<Measurement> getAllMeasurements()
+    public static final Measurement getMeasurement()
     {
-        List<Measurement> measurements = new ArrayList<>();
         try (Connection connection = makeConnection();
                 Statement statement = connection.createStatement();)
         {
             String query = "SELECT * FROM meas_tbl";
             ResultSet resultSet = statement.executeQuery(query);
+            Measurement measurement = null;
             while(resultSet.next())
             {
-                Measurement measurement = new Measurement(
-                        resultSet.getLong("id"),
-                        resultSet.getDouble("temperature"));
-                measurements.add(measurement);
+                measurement = new Measurement(resultSet.getDouble("temp"));
             }
-            return measurements;
+            return measurement;
         }
         catch (SQLException e)
         {

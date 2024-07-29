@@ -45,7 +45,7 @@ public class Status implements Stored
 
     public String toString()
     {
-        return "('" + state.toString() + "', '" + dateTime.toString() + "')"; 
+        return "(" + state.toString() + ", '" + dateTime.toString() + "')"; 
     }
 }
 

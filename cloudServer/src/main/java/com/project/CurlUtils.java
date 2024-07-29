@@ -12,6 +12,7 @@ import java.util.Calendar;
 
 import static fi.iki.elonen.NanoHTTPD.MIME_PLAINTEXT;
 import static fi.iki.elonen.NanoHTTPD.newFixedLengthResponse;
+
 import static com.project.SQLDatabaseConnection.insertMeasurement;
 import static com.project.SQLDatabaseConnection.insertStatus;
 import static com.project.SQLDatabaseConnection.updateConfiguration;
@@ -83,7 +84,8 @@ public final class CurlUtils
         {
             String response = null;
             session.parseBody(new HashMap<>());
-            Stored stored = parseTableData(session.getUri().replace("/", ""), session.getQueryParameterString());
+            Stored stored = parseTableData(session.getUri().replace("/", ""),
+                    session.getQueryParameterString());
 
             if (stored == null)
             {
@@ -100,7 +102,7 @@ public final class CurlUtils
             }
             else if (stored instanceof Measurement) 
             {
-                response = handleTemperatureChange((Measurement) stored) + "/n";
+                response = handleTemperatureChange((Measurement) stored) + ";";
                 response += SQLDatabaseConnection.insertMeasurement((Measurement) stored);
             }
 
@@ -122,7 +124,6 @@ public final class CurlUtils
         switch (table)
         {
             case CONFIGURATION_TBL:
-            case MEASUREMENT_TBL:
                response = SQLDatabaseConnection.deleteConfiguration(index);
                return newFixedLengthResponse(response); 
             default:
@@ -152,8 +153,7 @@ public final class CurlUtils
                 return new Configuration(0L, heatTemp, coolTemp, desc);
 
             case MEASUREMENT_TBL:
-                double temp = Double.parseDouble(data);
-                return new Measurement(0L, temp);
+                return new Measurement(Double.parseDouble(data));
             default:
                 return null;
         }        
@@ -189,13 +189,13 @@ public final class CurlUtils
         {
             // Turn heater off
             System.out.println("Turning heater off.");
-            return SQLDatabaseConnection.updateStatus(new Status(false, ts));
+            return SQLDatabaseConnection.insertStatus(new Status(false, ts));
         }
         else if (temp < config.getHeatTemperature())
         {
             //turn heater on
             System.out.println("Turning heater on.");
-            return SQLDatabaseConnection.updateStatus(new Status(true, ts));
+            return SQLDatabaseConnection.insertStatus(new Status(true, ts));
         }
 
         System.out.println("No change");
