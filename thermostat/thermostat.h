@@ -19,6 +19,10 @@
 #define RECV_SIGKILL            9
 #define WEIRD_EXIT              10
 #define UNKNOWN_HEATER_STATE    11
+#define RECV_SIGSTOP		12
+#define FLAME_ON		13
+#define ICE_ICE_BABY		14
+
 #define DAEMON_NAME     "thermostatd"
 
 // constants
@@ -45,7 +49,7 @@ struct Arguments
 };
 
 // argp constant - usage script
-static char usage_help[] = "-c /directory/ --url http://3.132.111.9:8080/status_tbl> -g";
+static char usage_help[] = "-c /<directory>/ --url http://3.132.111.9:8080/status_tbl -g";
 
 // argp constant - documentation
 static char description[] = "\n\t\t\t>++('> >++('> >++('>\n\

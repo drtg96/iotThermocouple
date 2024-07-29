@@ -7,7 +7,7 @@
  *              and respond to programming
  *   
  * OUTPUT: 
- *  [] local    /var/log/syslog
+ *  [] local    /var/log/messages
  *  [] local    /tmp/status
  *  [] remote   aws-ec2-server
 ***************************************************************************/
@@ -29,6 +29,7 @@
 
 /**
  * Map an error code to a string.
+ * NOTE: Leveraged from thermocouple
  *
  * @param err The error code.
  * @return A string related to the error code.
@@ -36,7 +37,8 @@
 const char* error_to_msg(const int err) 
 {
   char* msg = NULL;
-  switch(err) {
+  switch(err) 
+  {
     case OK:
       msg = "Everything is just fine.";
       break;
@@ -47,6 +49,7 @@ const char* error_to_msg(const int err)
       msg = "Unable to set the session id.";
       break;
     case RECV_SIGTERM:
+    case RECV_SIGSTOP:
       msg = "Received a termination signal; exiting.";
       break;
     case RECV_SIGKILL:
@@ -71,12 +74,24 @@ const char* error_to_msg(const int err)
     case UNKNOWN_HEATER_STATE:
       msg = "Encountered an unknown heater state!";
       break;
+    case FLAME_ON:
+      msg = "Turning heater on.";
+      break;
+    case ICE_ICE_BABY:
+      msg = "Turning heater off.";
+      break;
     default:
       msg = "You submitted some kind of wackadoodle error code. What's up with you?";
   }
   return msg;
 }
 
+/*
+ * Exit the process in a civilized manner
+ * NOTE: Leveraged from thermocouple
+ * 
+ * @param err: The error code
+ */
 static void _exit_process(const int err)
 {
   syslog(LOG_INFO, "%s", error_to_msg(err));
@@ -85,7 +100,11 @@ static void _exit_process(const int err)
 }
 
 /*
- * Curl call_back function
+ * Curl call_back function for retrieving data
+ * @param data The resultant data
+ * @param size The size of the resultant data
+ * @param nmemb The block size in bytes
+ * @param userp The raw curl buffer
  */
 static size_t call_back(void *data, size_t size, size_t nmemb, void *userp)
 {
@@ -95,6 +114,7 @@ static size_t call_back(void *data, size_t size, size_t nmemb, void *userp)
     char *ptr = realloc(buf->response, buf->size + realsize + 1);
     if (ptr == NULL)
     {
+        syslog(LOG_INFO, "response ptr is null");
         return 0;
     }
 
@@ -106,16 +126,25 @@ static size_t call_back(void *data, size_t size, size_t nmemb, void *userp)
     return realsize;
 }
 
+/*
+ * Curl buffer object
+ */
 struct CurlBuffer chunk = {0};
 
 /*
  * A helper function to use curl.h to send and ack curl requests
+ * @param url The fully qualified url
+ * @param message What we want to sent to the url
+ * @param type {Post, PUT, GET, DELETE}
+ * @param hasVerb A way for me to know if there's an additional piece of work I need to do
+ * @return The response message (if any)
  */
 static char * doCurlAction(const char *url, char *message, char *type, bool hasVerb)
 {
     CURL *curl = curl_easy_init();
     if (curl)
     {
+	CURLcode rCurlCode;
         FILE* outFile = fopen("curlCache.txt", "wb");
     
         curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -124,21 +153,26 @@ static char * doCurlAction(const char *url, char *message, char *type, bool hasV
 
         if (strcmp(type, "GET") == 0)
         {
+	    syslog(LOG_INFO, "Handling GET cmd");
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, call_back);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
         }
 
         if (hasVerb)
         {
+	    syslog(LOG_INFO, "Handling verb based cmd");
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, message);
         }
         else
         {
             curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         }
-
-        if (curl_easy_perform(curl) != CURLE_OK)
+	
+	rCurlCode = curl_easy_perform(curl);
+        
+	if (rCurlCode != CURLE_OK)
         {
+            syslog(LOG_INFO, "Bad curl response.");
             return (char *) REQ_ERR;
         }
 
@@ -146,12 +180,17 @@ static char * doCurlAction(const char *url, char *message, char *type, bool hasV
     }
     else
     {
+        syslog(LOG_INFO, "Unable to initialze curl driver.");
         return (char *) INIT_ERR;
     }
+    syslog(LOG_INFO, "Response (if any): %s", chunk.response);
     return chunk.response;
 }
 
-// argp parser
+/*
+ *  argp parser
+ *  NOTE: see online for argp docs
+ */
 static error_t parser(int key, char *arg, struct argp_state *state)
 {
     struct Arguments *arg_struct = state->input;
@@ -218,12 +257,12 @@ static error_t parser(int key, char *arg, struct argp_state *state)
         case ARGP_KEY_SUCCESS: // perform request
             if (arg_struct->get) 
             {
-                doCurlAction(arg_struct->url, NULL, "GET", false);
+	    	doCurlAction(arg_struct->url, NULL, "GET", false);
                 break;
             }
             else if (arg_struct->post)
             {
-                 doCurlAction(arg_struct->url, arg_struct->msg, "POST", true);
+		 doCurlAction(arg_struct->url, arg_struct->msg, "POST", true);
                  break;
             }
             else if (arg_struct->put)
@@ -233,7 +272,7 @@ static error_t parser(int key, char *arg, struct argp_state *state)
             }
             else if (arg_struct->delete)
             {
-                doCurlAction(arg_struct->url, arg_struct->msg, "DELETE", true);
+		doCurlAction(arg_struct->url, arg_struct->msg, "DELETE", true);
                 break;
             }
         default:
@@ -250,7 +289,7 @@ static error_t parser(int key, char *arg, struct argp_state *state)
 static struct argp argp = {options, parser, usage_help, description, 0, 0, 0};
 
 /*
- * Read temperature file and publishes the data
+ * Read temperature file and publish the data to the database
  */
 static void publishMeasurement(void)
 {
@@ -265,13 +304,14 @@ static void publishMeasurement(void)
     fread(buffer, size, 1, fp);
     buffer[size] = '\0';
     
-    syslog(LOG_INFO, "Temperature taken successfully.");
-    
+    syslog(LOG_INFO, "%s:%s", "Temperature taken successfully", buffer);
     doCurlAction(MEAS_TBL_URL, buffer, "POST", true);
 }
 
 /*
  * Code to manage the heater
+ * @param state Should the heater be on or off based on the programming?
+ * @return Messaging for syslog
  */
 static int setHeater(char *state)
 {
@@ -283,7 +323,12 @@ static int setHeater(char *state)
 
     fputs(state, fp);
     fclose(fp);
-    return OK;
+
+    if (strcmp(state, "ON") == 0)
+    {
+        return FLAME_ON;
+    }
+    return ICE_ICE_BABY;
 }
 
 /*
@@ -291,10 +336,26 @@ static int setHeater(char *state)
  */
 static void requestStatus(void)
 {
-    int code;
-    char *status = doCurlAction(STATUS_TBL_URL, NULL, "GET", false);
-    char* state = status; //TODO get state from status
-    if (strcmp(state, "true") == 0) 
+    int code = OK;
+    syslog(LOG_INFO, "Requesting status");
+    const char *status = doCurlAction(STATUS_TBL_URL, NULL, "GET", false);
+   
+    // get state from status
+    char *state_keyword = "\"state\":";
+    char *start, *end;
+
+    start = strstr(status, state_keyword);
+    if (start)
+    {
+        start += strlen(state_keyword);
+        end = strchr(start, ',');
+        if (end)
+       	{
+            *end = '\0';
+        }
+    }
+
+    if (strcmp(start, "true") == 0) 
     {
        code = setHeater("ON");
     }
@@ -303,17 +364,16 @@ static void requestStatus(void)
        code = setHeater("OFF");
     }
 
-    if (code != OK)
-    {
-        syslog(LOG_INFO, "%s", error_to_msg(code));
-    }
+    syslog(LOG_INFO, "%s", error_to_msg(code));
 
     chunk.response = NULL;
     chunk.size = 0;
 }
 
 /*
- * Check is a file exists
+ * Helper function to check if a file exists
+ * @param fname Filename
+ * @return yes or no
  */
 static bool file_exists(const char* fname)
 {
@@ -322,7 +382,9 @@ static bool file_exists(const char* fname)
 }
 
 /*
- * Publish the configuration file
+ * Publish the configuration data to the database
+ * @param config The configuration data. Currently only
+ * 	3 configurations are supported
  */
 static void publishConfiguration(const char* config)
 {
@@ -337,24 +399,29 @@ static void publishConfiguration(const char* config)
     fread(buffer, size, 1, fp);
     buffer[size] = '\0';
     
-    syslog(LOG_INFO, "Config parsed successfully.");
-    
+    syslog(LOG_INFO, "%s: %s", "Config parsed successfully", buffer);
     doCurlAction(CONFIG_TBL_URL, buffer, "POST", true);
+    sleep(1);
 }
 
 /*
- * String combiner
+ * Helper function to combine c strings
+ * @param str1 String one
+ * @param str2 String two
+ * @return Combination or str1 and str2
  */
-char* combine(const char* str1, const char* str2)
+static char* combine(const char* str1, const char* str2)
 {
-    char* result = malloc(strlen(str1) + strlen(str2) + 1); // +1 for the null-terminator
+    char* result = malloc(strlen(str1) + strlen(str2) + 1);
     strcpy(result, str1);
     strcat(result, str2);
     return result;
 }
 
 /*
- * Publish the configuration file
+ * Read and error handle if necissary all the programming files
+ * then ensure that the data is sent to the database
+ * @param configDir The directory where the configuration files are stored
  */
 static void setConfiguration(const char* configDir)
 {
@@ -381,7 +448,8 @@ static void setConfiguration(const char* configDir)
 }
 
 /*
- * Code taken from example in slides with some small modifications
+ * Signal handling code block for forked daemonized code
+ * @param the signal identifier
  */
 static void _signal_handler(const int signal)
 {
@@ -392,62 +460,21 @@ static void _signal_handler(const int signal)
         case SIGTERM:
             _exit_process(RECV_SIGTERM);
             break;
+        case SIGSTOP:
+            _exit_process(RECV_SIGSTOP);
+            break;
+        case SIGKILL:
+            _exit_process(RECV_SIGKILL);
+            break;
         default:
             syslog(LOG_INFO, "received unhandled signal");
-    }
-}
-
-static void _handle_fork(const pid_t pid)
-{
-  // For some reason, we were unable to fork.
-  if (pid < 0)
-  {
-    _exit_process(NO_FORK);
-  }
-
-  // Fork was successful so exit the parent process.
-  if (pid > 0)
-  {
-    exit(OK);
-  }
-}
-
-/*
- * Handler for handfree version on this program
- */
-static void runAsDaemon(void)
-{
-    pid_t pid = fork();
-
-    openlog(DAEMON_NAME, LOG_PID | LOG_NDELAY | LOG_NOWAIT, LOG_DAEMON);
-
-    _handle_fork(pid);
-
-    if (setsid() < -1)
-    {
-        _exit_process(NO_SETSID);
-    }
-
-    signal(SIGTERM, _signal_handler);
-    signal(SIGHUP, _signal_handler);
-   
-
-    //umask(S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-
-    if (chdir("/") < 0)
-    {
-      _exit_process(ERR_CHDIR);
-    }
-
-    // Closing file descriptors (STDIN, STDOUT, etc.).
-    for (long x = sysconf(_SC_OPEN_MAX); x>=0; x--)
-    {
-        close(x);
+	    break;
     }
 }
 
 /*
- * This function is the engine of the program
+ * The engine of the thermostat program
+ * @return helpful debug messages
  */
 static int execute(void)
 {
@@ -456,15 +483,14 @@ static int execute(void)
     {
         syslog(LOG_INFO, "Thermocouple test passed.");
 
-	// 
-
-        while (1)
+        while (true)
         {
-         // read temp and send post to webserver for thermostat
-         publishMeasurement();
-         // get and respond to the heater status
-         requestStatus();
-         sleep(3);
+       		// Read temp and send post to webserver for thermostat
+		publishMeasurement();
+       		// Get and respond to the heater status
+                requestStatus();
+                // Rinse and repeat and nearly the cadence of the simulator
+		sleep(4);
         }
         return WEIRD_EXIT;
     }
@@ -477,7 +503,6 @@ static int execute(void)
  */
 int main(int argc, char **argv)
 {
-    int code;
     if (argc > 1)
     {
         syslog(LOG_INFO, "-Using CLI-");
@@ -501,19 +526,58 @@ int main(int argc, char **argv)
     else
     {
         syslog(LOG_INFO, "-Using daemon-");
+	    
+	openlog(DAEMON_NAME, LOG_PID | LOG_NDELAY | LOG_NOWAIT, LOG_DAEMON);
 
+        syslog(LOG_INFO, "%s: %s", "Starting daemon", DAEMON_NAME);
+
+        pid_t pid = fork();
+
+        // exit if fork fails
+        if (pid < 0)
+        {
+            _exit_process(NO_FORK);
+        }
+
+        // check that parent fork returns pid of child
+        if (pid > 0)
+        {
+            return OK;
+        }
+
+        // creates a new session as process group leader
+        pid_t new_pid = setsid();
+        if (new_pid < 0)
+        {
+            _exit_process(NO_SETSID);
+        }
+
+        // Close unused pointers
+        close(STDIN_FILENO);
+        close(STDOUT_FILENO);
+        close(STDERR_FILENO);
+
+        //Mask file permissions R/W only for the user
+        umask(S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+
+        // change working directory
+        if (chdir("/") < 0)
+        {
+            _exit_process(ERR_CHDIR);
+        }
+
+        // handle signals
+        signal(SIGTERM, _signal_handler);
+        signal(SIGHUP, _signal_handler);
+        signal(SIGSTOP, _signal_handler);
+        signal(SIGKILL, _signal_handler);
+        
         // use the config files found in the home directory
         setConfiguration(DFT_CONF_DIR);
-	
-	code = runAsDaemon();
-        if (code != OK)
-        {
-            _exit_process(code);
-        }
     }
-            
-    code = execute();
-    if (execute() != OK)
+    
+    int code = execute();
+    if (code != OK)
     {
         _exit_process(code);
     }
