@@ -7,10 +7,8 @@ import java.time.Instant;
  * CREATE DATABASE thermaldb;
  * USE thermaldb;
  * CREATE TABLE meas_tbl
- * (
- *    temp FLOAT(25)  NOT NULL,
- *    dateTime DATETIME NOT NULL
- * );
+ *    (temp FLOAT(25) NOT NULL,
+ *    dateTime DATETIME NOT NULL);
  */
 
 public class Measurement implements Stored
